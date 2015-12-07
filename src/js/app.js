@@ -1,4 +1,8 @@
 $(document).ready(function(){
+
+  var SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly'];
+  var CLIENT_ID = '613139624606-6ehoqh6b9qorgltqqaisnun1am8b8hpj.apps.googleusercontent.com';
+
   var action;
   if(window.action == 'list'){
     action = listFiles;
