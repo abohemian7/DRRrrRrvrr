@@ -1,124 +1,88 @@
-$(document).ready(function(){
-  var action;
-  if(window.action == 'list'){
-    action = listFiles;
-  } else if(window.action = 'doc'){
-    action = displayFile;
-  }
+// Your Client ID can be retrieved from your project in the Google
+// Developer Console, https://console.developers.google.com
+var CLIENT_ID = '613139624606-6ehoqh6b9qorgltqqaisnun1am8b8hpj.apps.googleusercontent.com';
 
-  /**
-   * Check if current user has authorized this application.
-   */
-  window.checkAuth = function() {
-    gapi.auth.authorize(
+var SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly'];
+
+/**
+ * Check if current user has authorized this application.
+ */
+function checkAuth() {
+  gapi.auth.authorize(
       {
         'client_id': CLIENT_ID,
         'scope': SCOPES.join(' '),
         'immediate': true
       }, handleAuthResult);
-  };
+}
 
-  /**
-   * Handle response from authorization server.
-   *
-   * @param {Object} authResult Authorization result.
-   */
-  function handleAuthResult(authResult) {
-    var authorizeDiv = document.getElementById('authorize-div');
-    if (authResult && !authResult.error) {
-      // Hide auth UI, then load client library.
-      authorizeDiv.style.display = 'none';
-      loadDriveApi();
-    } else {
-      // Show auth UI, allowing the user to initiate authorization by
-      // clicking authorize button.
-      authorizeDiv.style.display = 'inline';
-    }
+/**
+ * Handle response from authorization server.
+ *
+ * @param {Object} authResult Authorization result.
+ */
+function handleAuthResult(authResult) {
+  var authorizeDiv = document.getElementById('authorize-div');
+  if (authResult && !authResult.error) {
+    // Hide auth UI, then load client library.
+    authorizeDiv.style.display = 'none';
+    loadDriveApi();
+  } else {
+    // Show auth UI, allowing the user to initiate authorization by
+    // clicking authorize button.
+    authorizeDiv.style.display = 'inline';
   }
+}
 
-  /**
-   * Initiate auth flow in response to user clicking authorize button.
-   *
-   * @param {Event} event Button click event.
-   */
-  function handleAuthClick(event) {
-    gapi.auth.authorize(
+/**
+ * Initiate auth flow in response to user clicking authorize button.
+ *
+ * @param {Event} event Button click event.
+ */
+function handleAuthClick(event) {
+  gapi.auth.authorize(
       {client_id: CLIENT_ID, scope: SCOPES, immediate: false},
       handleAuthResult);
-    return false;
-  }
+  return false;
+}
 
-  /**
-   * Load Drive API client library.
-   */
-  function loadDriveApi() {
-    gapi.client.load('drive', 'v2', action);
-  }
+/**
+ * Load Drive API client library.
+ */
+function loadDriveApi() {
+  gapi.client.load('drive', 'v2', listFiles);
+}
 
-  /**
-   * Print files.
-   */
-  function listFiles() {
-    var request = gapi.client.drive.files.list({
-        'maxResults': 10,
-        'q': "mimeType = 'application/vnd.google-apps.document'"
-      });
+/**
+ * Print files.
+ */
+function listFiles() {
+  var request = gapi.client.drive.files.list({
+    'maxResults': 10
+  });
 
-      request.execute(function(resp) {
-        var files = resp.items;
-        if (files && files.length > 0) {
-          for (var i = 0; i < files.length; i++) {
-            var file = files[i];
-            appendLink(file.id, file.title);
-          }
-        } else {
-          appendLink('', 'No files found.');
-        }
-      });
-  }
-
-  function displayFile() {
-    fileId = window.location.hash.substring(1);
-    var request = gapi.client.drive.files.get({fileId: fileId});
-
-    request.execute(function(resp) {
-      var accessToken = gapi.auth.getToken().access_token;
-
-      $.ajax({
-        url: resp.exportLinks["text/plain"],
-        type: "GET",
-        beforeSend: function(xhr){
-          xhr.setRequestHeader('Authorization', "Bearer "+accessToken);
-        },
-        success: function( data ) {
-          $('#output').html(data.replace(/\n/g, "<br>"));
-        }
-      });
-
-    });
-  }
-
-  /**
-   * Append a link element to the body containing the given text
-   * and a link to the /doc page.
-   *
-   * @param {string} id Id to be used in the link's href attribute.
-   * @param {string} text Text to be placed in a element.
-   */
-  function appendLink(id, text){
-    if(id != ''){
-      var li = $('<li></li>');
-      var link = $('<a></a>');
-      link.attr('href', '/doc.html#'+id);
-      link.html(text);
-      li.append(link);
-      $('#output ul').append(li);
+  request.execute(function(resp) {
+    appendPre('Files:');
+    var files = resp.items;
+    if (files && files.length > 0) {
+      for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        appendPre(file.title + ' (' + file.id + ')');
+      }
     } else {
-      $('#output').append(text);
+      appendPre('No files found.');
     }
-  }
+  });
+}
 
-  $('#authorize-btn').click(handleAuthClick);
-
-
-});
+/**
+ * Append a pre element to the body containing the given message
+ * as its text node.
+ *
+ * @param {string} message Text to be placed in pre element.
+ */
+function appendPre(message) {
+  var pre = document.getElementById('output');
+  var textContent = document.createTextNode(message + '\n');
+  pre.appendChild(textContent);
+}
